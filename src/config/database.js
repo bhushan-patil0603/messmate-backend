@@ -21,6 +21,12 @@ const baseConfig = {
     createdAt:    'created_at',
     updatedAt:    'updated_at',
   },
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false,
+    },
+  },
 };
 
 module.exports = {
@@ -28,8 +34,8 @@ module.exports = {
   test:        { ...baseConfig, database: `${baseConfig.database}_test` },
   production:  {
     ...baseConfig,
-    dialectOptions: {
-      ssl: { require: true, rejectUnauthorized: false },
-    },
+    // dialectOptions: {
+    //   ssl: { require: true, rejectUnauthorized: false },
+    // },
   },
 };
