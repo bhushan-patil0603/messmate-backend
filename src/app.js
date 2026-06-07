@@ -2,85 +2,70 @@
 
 require('dotenv').config();
 
-const express           = require('express');
-const cors              = require('cors');
+const express      = require('express');
+const helmet       = require('helmet');
+const cors         = require('cors');
+const morgan       = require('morgan');
 
-// ── Security & NFR middleware ──────────────────────────────────────────────────
-const helmetConfig      = require('./config/helmet');
-const { corsConfig }    = require('./config/cors');
-const sanitiseRequest   = require('./middlewares/sanitise');
-const requestSizeGuard  = require('./middlewares/requestSizeGuard');
-const { globalLimiter } = require('./middlewares/rateLimiter');
 const errorHandler      = require('./middlewares/errorHandler');
-const buildHttpLogger   = require('./utils/httpLogger');
+const { globalLimiter } = require('./middlewares/rateLimiter');
+const healthRouter      = require('./routes/health');
 
 // ── Routers ───────────────────────────────────────────────────────────────────
-const healthRouter      = require('./routes/health');
-const authRouter        = require('./routes/auth');
-const memberRouter      = require('./routes/members');
-const mealRouter        = require('./routes/meals');
-const resetRouter       = require('./routes/reset');
+const authRouter   = require('./routes/auth');         // Part 2 ✓
+// const memberRouter = require('./routes/members');   // Part 3
+// const mealRouter   = require('./routes/meals');     // Part 4
+// const resetRouter  = require('./routes/reset');     // Part 5
 
 const app = express();
 
-// ════════════════════════════════════════════════════════════════════════════
-// LAYER 1 — Security headers (helmet must be first)
-// ════════════════════════════════════════════════════════════════════════════
-app.use(helmetConfig);
+// ── Security headers ──────────────────────────────────────────────────────────
+app.use(helmet());
 
-// ════════════════════════════════════════════════════════════════════════════
-// LAYER 2 — CORS
-// ════════════════════════════════════════════════════════════════════════════
-app.use(cors(corsConfig));
-app.options('*', cors(corsConfig)); // pre-flight for all routes
+// ── CORS ──────────────────────────────────────────────────────────────────────
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000')
+  .split(',').map((o) => o.trim());
 
-// ════════════════════════════════════════════════════════════════════════════
-// LAYER 3 — HTTP request logging
-// ════════════════════════════════════════════════════════════════════════════
-app.use(buildHttpLogger());
+app.use(cors({
+  origin(origin, cb) {
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    cb(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials:    true,
+  methods:        ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 
-// ════════════════════════════════════════════════════════════════════════════
-// LAYER 4 — Global rate limiter (IP-based, 100 req / 15 min)
-// ════════════════════════════════════════════════════════════════════════════
+// ── Request logging (dev only) ────────────────────────────────────────────────
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
+
+// ── Global rate limiter ───────────────────────────────────────────────────────
 app.use('/api', globalLimiter);
 
-// ════════════════════════════════════════════════════════════════════════════
-// LAYER 5 — Request parsing
-// express.json limit is the primary body-size guard;
-// requestSizeGuard rejects at the header level before body streams
-// ════════════════════════════════════════════════════════════════════════════
-app.use(requestSizeGuard);
+// ── Request parsing ───────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10kb' }));
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(express.urlencoded({ extended: true }));
 
-// ════════════════════════════════════════════════════════════════════════════
-// LAYER 6 — Input sanitisation
-// Strips NoSQL injection chars ($, .) and HTTP parameter pollution
-// ════════════════════════════════════════════════════════════════════════════
-app.use(sanitiseRequest);
+// ── Routes ────────────────────────────────────────────────────────────────────
+app.use('/api/v1',      healthRouter);
+app.use('/api/v1/auth', authRouter);
 
-// ════════════════════════════════════════════════════════════════════════════
-// LAYER 7 — Routes
-// ════════════════════════════════════════════════════════════════════════════
-app.use('/api/v1',         healthRouter);
-app.use('/api/v1/auth',    authRouter);
-app.use('/api/v1/members', memberRouter);
-app.use('/api/v1',         mealRouter);   // /members/:id/meal, /members/:id/meals, /meals/summary
-app.use('/api/v1',         resetRouter);  // /reset-day, /reset-logs
+// Uncomment below as each Part is added:
+// app.use('/api/v1/members', memberRouter);
+// app.use('/api/v1',         mealRouter);
+// app.use('/api/v1',         resetRouter);
 
-// ════════════════════════════════════════════════════════════════════════════
-// LAYER 8 — 404 catch-all (must come after all routes)
-// ════════════════════════════════════════════════════════════════════════════
+// ── 404 catch-all ─────────────────────────────────────────────────────────────
 app.all('*', (req, res) => {
   res.status(404).json({
     status:  'fail',
-    message: `Route ${req.method} ${req.originalUrl} not found on this server`,
+    message: `Route ${req.method} ${req.originalUrl} not found`,
   });
 });
 
-// ════════════════════════════════════════════════════════════════════════════
-// LAYER 9 — Global error handler (must be last — 4 params required)
-// ════════════════════════════════════════════════════════════════════════════
+// ── Global error handler (must be last) ───────────────────────────────────────
 app.use(errorHandler);
 
 module.exports = app;
