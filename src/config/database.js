@@ -21,12 +21,12 @@ const baseConfig = {
     createdAt:    'created_at',
     updatedAt:    'updated_at',
   },
-  dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false,
-    },
-  },
+  // dialectOptions: {
+  //   ssl: {
+  //     require: true,
+  //     rejectUnauthorized: false,
+  //   },
+  // },
 };
 
 module.exports = {

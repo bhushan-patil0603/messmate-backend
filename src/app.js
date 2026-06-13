@@ -13,8 +13,8 @@ const healthRouter = require("./routes/health");
 
 // ── Routers ───────────────────────────────────────────────────────────────────
 const authRouter = require("./routes/auth"); // Part 2 ✓
-// const memberRouter = require('./routes/members');   // Part 3
-// const mealRouter   = require('./routes/meals');     // Part 4
+const memberRouter = require('./routes/members');   // Part 3
+const mealRouter   = require('./routes/meals');     // Part 4
 // const resetRouter  = require('./routes/reset');     // Part 5
 
 const app = express();
@@ -57,7 +57,7 @@ app.use("/api/v1/auth", authRouter);
 
 app.use("/api/v1/members", memberRouter);
 app.use("/api/v1/meals", mealRouter);
-app.use("/api/v1/reset", resetRouter);
+// app.use("/api/v1/reset", resetRouter);
 
 // ── 404 catch-all ─────────────────────────────────────────────────────────────
 app.all("*", (req, res) => {
