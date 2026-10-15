@@ -55,6 +55,11 @@ const listMembersValidators = [
     .isIn(['PENDING', 'ACTIVE', 'DECLINED', 'EXPIRED'])
     .withMessage('Status must be one of: PENDING, ACTIVE, DECLINED, EXPIRED'),
 
+  query('search')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 }).withMessage('Search must be between 1 and 100 characters'),
+
   query('page')
     .optional()
     .isInt({ min: 1 }).withMessage('Page must be a positive integer'),
