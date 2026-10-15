@@ -55,9 +55,16 @@ async function createMemberRequest(data) {
  *
  * @param {object} options - { status, page, limit }
  */
-async function listMembers({ status, page = 1, limit = 20 } = {}) {
+async function listMembers({ status, search, page = 1, limit = 20 } = {}) {
   const where  = {};
   if (status) where.status = status;
+
+  if (search) {
+    where[Op.or] = [
+      { name:       { [Op.iLike]: `%${search}%` } },
+      { member_uid: { [Op.iLike]: `%${search}%` } },
+    ];
+  }
 
   const offset = (page - 1) * limit;
 

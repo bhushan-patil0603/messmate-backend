@@ -30,9 +30,9 @@ const createMember = asyncHandler(async (req, res) => {
  * Query: ?status=PENDING|ACTIVE|DECLINED|EXPIRED&page=1&limit=20
  */
 const listMembers = asyncHandler(async (req, res) => {
-  const { status, page, limit } = req.query;
+  const { status, search, page, limit } = req.query;
 
-  const result = await memberService.listMembers({ status, page, limit });
+  const result = await memberService.listMembers({ status, search, page, limit });
 
   res.status(200).json({
     status: 'success',

@@ -12,7 +12,7 @@ const adminLoginValidators = [
 
   body('password')
     .notEmpty().withMessage('Password is required')
-    .isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    .isLength({ min: 6, max: 16 }).withMessage('Password must be between 6 and 16 characters'),
 ];
 
 /**
